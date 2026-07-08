@@ -23,3 +23,9 @@ Paste the printed markdown into your PR description. Any PostHog org member's `g
 - Pipe the base64 via stdin (`-F content=@-`) as above — passing it as an argument fails for files over ~1 MB (ARG_MAX).
 - Concurrent uploads can occasionally return HTTP 409; retry once.
 - Images only, a few MB each. Videos and large binaries don't belong here.
+
+## Example
+
+This 16x16 test image was uploaded with the command above; its file was later deleted from `main`, yet the SHA-pinned URL still renders:
+
+![example-embed](https://raw.githubusercontent.com/PostHog/pr-assets/cfdadbcab2a9d2d3e2d206a8e2bc694f65f8804d/2026/07/67d06e3d-3fe8-4ed0-b183-8bff80cd77bb.png)
