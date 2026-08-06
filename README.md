@@ -6,22 +6,34 @@ Storage for screenshots and images embedded in PostHog PR descriptions, so engin
 
 ## Upload
 
+This repo requires verified signed commits. Uploaders that use the GitHub Contents API create unsigned commits, so they are blocked by the branch rules.
+
 ```bash
 FILE=path/to/screenshot.png
+FILE="$(cd "$(dirname "$FILE")" && pwd)/$(basename "$FILE")"
 KEY="$(date +%Y/%m)/$(uuidgen | tr '[:upper:]' '[:lower:]').${FILE##*.}"
-SHA=$(base64 < "$FILE" | tr -d '\n' | gh api -X PUT "repos/PostHog/pr-assets/contents/$KEY" \
-  -f message="add screenshot" -F content=@- --jq '.commit.sha')
+
+git clone git@github.com:PostHog/pr-assets.git pr-assets-upload
+cd pr-assets-upload
+mkdir -p "$(dirname "$KEY")"
+cp "$FILE" "$KEY"
+git add "$KEY"
+git commit -m "add screenshot"
+git push origin main
+
+SHA=$(git rev-parse HEAD)
 echo "![screenshot](https://raw.githubusercontent.com/PostHog/pr-assets/$SHA/$KEY)"
 ```
 
-Paste the printed markdown into your PR description. Any PostHog org member's `gh` auth works — no clone, no branch, one API call.
+Paste the printed markdown into your PR description. Any PostHog org member can push, as long as their git signing setup is working.
+
+If an uploader fails with HTTP 409 and mentions `Commits must have verified signatures`, use the signed git workflow above. The same rule can block `gh api` and agent upload helpers.
 
 ## Conventions
 
 - Paths are `YYYY/MM/<uuid>.<ext>`. Random names avoid collisions; date dirs keep the tree browsable and prunable.
 - Embed URLs are pinned to the commit SHA, so images keep rendering even if the file is later moved or deleted.
-- Pipe the base64 via stdin (`-F content=@-`) as above — passing it as an argument fails for files over ~1 MB (ARG_MAX).
-- Concurrent uploads can occasionally return HTTP 409; retry once.
+- Concurrent pushes can occasionally race. Pull `main`, then push again.
 - Images only, a few MB each. Videos and large binaries don't belong here.
 
 ## Example
